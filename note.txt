@@ -1,0 +1,9 @@
+https://github.com/CarmineD8/actionlib_tutorials/blob/master/src/fibonacci_client.cpp
+
+https://github.com/CarmineD8/turtlesim_controller/blob/main/src/turtlesim_subcriber.cpp
+
+http://wiki.ros.org/roscpp/Overview/Callbacks%20and%20Spinning
+
+http://wiki.ros.org/actionlib_tutorials/Tutorials/SimpleActionClient%28Threaded%29
+
+https://docs.ros.org/en/diamondback/api/actionlib/html/classactionlib_1_1SimpleActionClient.html
