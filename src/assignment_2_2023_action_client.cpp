@@ -4,6 +4,8 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/Odometry.h>
+#include <assignment_2_2023/customStatus.h>
 #include <iostream>
 #include <iterator>
 #include <ostream>
@@ -37,11 +39,34 @@ std::vector<int> parseForGoal(std::string input) {
     return targetPosition;
 }
 
+ros::Publisher odomPublisher;
+
+void odomCallback(const nav_msgs::Odometry::ConstPtr& pose){
+    // ROS_INFO("%f",pose->pose.pose.position.x);
+
+    assignment_2_2023::customStatus customMsg;
+    customMsg.x = pose->pose.pose.position.x;
+    customMsg.y = pose->pose.pose.position.y;
+    customMsg.vel_x = pose->twist.twist.linear.y;
+    customMsg.vel_y = pose->twist.twist.linear.y;
+    odomPublisher.publish(customMsg);
+}
+
 int main(int argc, char *argv[]) {
     ros::init(argc, argv, "action_client");
+    ros::AsyncSpinner spinner(3);
+    ros::NodeHandle nh;
     std::vector<int> target(2);
     actionlib::SimpleActionClient<assignment_2_2023::PlanningAction> ac(
         "reaching_goal", true);
+
+    spinner.start();
+    ros::Subscriber odomSubscriber;
+    // TODO wait for something
+    odomSubscriber = nh.subscribe("/odom", 1, odomCallback);
+
+    odomPublisher = nh.advertise<assignment_2_2023::customStatus>("assignment_2_2023/customStatus",true);
+
     while (true) {
         std::cout << "Please insert next target\n"
                      "An example of input could be:\n"
@@ -58,6 +83,7 @@ int main(int argc, char *argv[]) {
                 break;
             else if (str == "cancel") {
                 ac.cancelGoal();
+                continue;
             }
         } catch (...) {
             std::cout << "Malformed input please retry\n\n";
@@ -80,5 +106,6 @@ int main(int argc, char *argv[]) {
         // actionlib::SimpleClientGoalState state = ac.getState();
         // ROS_INFO("Action finished: %s", state.toString().c_str());
     }
+
     return 0;
 }
