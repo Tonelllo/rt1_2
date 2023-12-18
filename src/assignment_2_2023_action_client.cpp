@@ -1,5 +1,6 @@
 #include <actionlib/client/simple_action_client.h>
 #include <algorithm>
+#include <assignment_2_2023/Goal.h>
 #include <assignment_2_2023/PlanningAction.h>
 #include <assignment_2_2023/customStatus.h>
 #include <boost/algorithm/string/classification.hpp>
@@ -7,9 +8,11 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <iostream>
 #include <iterator>
+#include <limits.h>
 #include <nav_msgs/Odometry.h>
 #include <ostream>
 #include <ros/ros.h>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -82,20 +85,39 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
     }
 }
 
+std::vector<int> target(2, INT_MIN);
+
+bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
+                           assignment_2_2023::Goal::Response &res) {
+    if (target[0] == INT_MIN) {
+        res.goal_x = 0;
+        res.goal_y = 0;
+        res.status = "Error: goal has to be set before requesting it. X and Y "
+                     "values are defaulted to 0";
+    } else {
+        res.goal_x = target[0];
+        res.goal_y = target[1];
+        res.status = "Ok";
+    }
+    return true;
+}
+
 int main(int argc, char *argv[]) {
     ros::init(argc, argv, "action_client");
     ros::AsyncSpinner spinner(3);
     ros::NodeHandle nh;
-    std::vector<int> target(2);
+    ros::ServiceServer goal_publisher;
     actionlib::SimpleActionClient<assignment_2_2023::PlanningAction> ac(
         "reaching_goal", true);
 
     spinner.start();
     ros::Subscriber odomSubscriber;
     ros::Subscriber statusSubscriber;
+    goal_publisher = nh.advertiseService("assignment_2_2023/last_goal",
+                                         targetServiceCallback);
     // TODO wait for something
     odomSubscriber = nh.subscribe("/odom", 1, odomCallback);
-    odomSubscriber = nh.subscribe("/reaching_goal/status", 1, goalCallback);
+    statusSubscriber = nh.subscribe("/reaching_goal/status", 1, goalCallback);
 
     odomPublisher = nh.advertise<assignment_2_2023::customStatus>(
         "assignment_2_2023/customStatus", true);
