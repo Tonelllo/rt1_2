@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <param name="avg_win_size" value= "10" />
+    <node pkg="assignment_2_2023" type="assignment_2_2023_action_client" name="assignment_action_client" output="screen" launch-prefix="lxterminal -e"/>
+    <node pkg="assignment_2_2023" type="assignment_2_2023_nodeC" name="assignment_nodeC" output="screen" launch-prefix="lxterminal -e"/>
+</launch>
