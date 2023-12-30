@@ -23,10 +23,11 @@ After having connected to the vnc server it's advised to create a clean director
 ```
 mkdir -p /root/my_ros/src
 ```
+**The next step is very important otherwise the lauch file will not work, in particular the folder has to be named assignment_2_2023**
 After that clone this repo in the newly created folder:
 ```
 cd /root/my_ros/src
-git clone https://github.com/Tonelllo/rt1_2.git
+git clone https://github.com/Tonelllo/rt1_2.git assignment_2_2023
 ```
 Run catkin_make
 ```
@@ -43,3 +44,23 @@ Update ros packages with:
 ```
 rospack profile
 ```
+Now the only thing left to do is run everything with:
+```
+roslaunch assignment_2_2023 assignment1.launch
+```
+
+Please note that nodeB is not launched by the launch files because it's an utility node and does not provide stream data, so the terminal would immediately close. This is explained better later.
+## What does this code do?
+This code has been developed to familiarize with some ros concepts for the second research track assignment:
+- Launch files
+- Custom messages
+- Custom services
+- Parameter files
+- Publishing and subscribing to topics and services
+- Action clients and servers
+- Custom action messages
+
+In addition to those topics this project has been developed to familiarize with the development of ros nodes using c++.
+The project is divided in three different nodes
+### assignment_action_client
+This node is, as the name suggests, the action client, that subscribes to ...
