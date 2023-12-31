@@ -1,3 +1,14 @@
+# Table of Contents
+- [Research Track Assignment 2](#research-track-assignment-2)
+  * [How to run the code](#how-to-run-the-code)
+  * [What does this code do?](#what-does-this-code-do)
+    + [assignment_action_client](#assignment_action_client)
+    + [assignment_2_2023_nodeB](#assignment_2_2023_nodeb)
+    + [assignment_2_2023_nodeC](#assignment_2_2023_nodec)
+
+<small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
+
+
 # Research Track Assignment 2
 ## How to run the code
 In order to run this code the simplest way is by using the docker container that can be retrieved by this command:
