@@ -112,9 +112,10 @@ main(){
       print("The format of the input is not correct pleasy retry");
     }
   }
+  // If we reach this poitn everything is good
+  publishNewGoal();
 }
-// If we reach this poitn everything is good
-publishNewGoal();
+
 ```
 ### assignment_2_2023_nodeB
 This is a service node that when run returns the status of the last goal set by the user. In case the goal is not yet set it informs the caller.
