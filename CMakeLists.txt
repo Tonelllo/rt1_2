@@ -57,6 +57,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   customStatus.msg
+  posAndVel.msg
 )
 
 ## Generate services in the 'srv' folder

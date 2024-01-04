@@ -169,7 +169,7 @@ int main(int argc, char *argv[]) {
 
     // Initializing a pool of threads to serve all the message publishing,
     // subscribing and input
-    ros::AsyncSpinner spinner(5);
+    ros::AsyncSpinner spinner(3);
     ros::NodeHandle nh;
     ros::ServiceServer goal_publisher;
     // Declaring the subscribers
@@ -181,6 +181,7 @@ int main(int argc, char *argv[]) {
         "reaching_goal", true);
 
     // Initialize the AsyncSpinner threads
+    spinner.start();
     spinner.start();
 
     // Advertising service
@@ -273,6 +274,8 @@ int main(int argc, char *argv[]) {
         goal.target_pose = goal_msg;
         ac.sendGoal(goal);
     }
+
+    std::cout << "Exiting..." << std::endl;
 
     return 0;
 }
