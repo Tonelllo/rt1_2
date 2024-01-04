@@ -10,7 +10,6 @@
 #include <iostream>
 #include <iterator>
 #include <limits.h>
-#include <mutex>
 #include <nav_msgs/Odometry.h>
 #include <ostream>
 #include <ros/ros.h>
@@ -20,15 +19,11 @@
 
 // Publisher for the odometry values
 ros::Publisher odomPublisher;
-// Mutex for hasTarget
-std::mutex hasTargetMutex;
 // Variable that shows wether the robot currently has a target or not
 bool hasTarget = false;
 // Variable needed to correctly display messages on change of the state of the
 // robot
 int previousState = -1;
-// Mutex for target variable
-std::mutex targetMutex;
 // Variable to store the current target
 std::vector<int> target(2, INT_MIN);
 
@@ -98,9 +93,7 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
         int currentState = statusArr->status_list[0].status;
 
         // The robot is trying to reach a target so hasTarget must be true
-        hasTargetMutex.lock();
         hasTarget = true;
-        hasTargetMutex.unlock();
 
         // Only if the status changes send a message notifying that it has
         // happened
@@ -128,15 +121,12 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
         }
     } else {
         // If the status_list has length 0 then there is no target currently
-        hasTargetMutex.lock();
         hasTarget = false;
-        hasTargetMutex.unlock();
     }
 }
 
 bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
                            assignment_2_2023::Goal::Response &res) {
-    targetMutex.lock();
     // If target still has the default value then it still needs to be
     // initialized
     if (target[0] == INT_MIN) {
@@ -145,7 +135,6 @@ bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
         res.status = "Error: goal has to be set before requesting it. X and Y "
                      "values are defaulted to 0";
     } else {
-        hasTargetMutex.lock();
         if (hasTarget) {
             // Otherwise if a target is set then send it.
             res.goal_x = target[0];
@@ -158,9 +147,7 @@ bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
             res.goal_y = 0;
             res.status = "Reached";
         }
-        hasTargetMutex.unlock();
     }
-    targetMutex.unlock();
     return true;
 }
 
@@ -216,11 +203,8 @@ int main(int argc, char *argv[]) {
         std::getline(std::cin, input);
         try {
             // Parsing the input
-            targetMutex.lock();
             target = parseForGoal(input);
-            targetMutex.unlock();
 
-            hasTargetMutex.lock();
             if (hasTarget) {
                 // If there still is a target to be reached then either you wait
                 // for the target or cancel it
@@ -229,7 +213,6 @@ int main(int argc, char *argv[]) {
                 // Get new input
                 continue;
             }
-            hasTargetMutex.unlock();
 
             // Here all the cases where a new target cannot be set are handled
         } catch (const char *str) {
@@ -265,10 +248,8 @@ int main(int argc, char *argv[]) {
          *  string stat
          */
         geometry_msgs::PoseStamped goal_msg;
-        targetMutex.lock();
         goal_msg.pose.position.x = target[0];
         goal_msg.pose.position.y = target[1];
-        targetMutex.unlock();
         assignment_2_2023::PlanningGoal goal;
         goal.target_pose = goal_msg;
         ac.sendGoal(goal);
