@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <mutex>
 
 // Publisher for the odometry values
 ros::Publisher odomPublisher;
