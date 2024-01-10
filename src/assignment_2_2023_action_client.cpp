@@ -4,12 +4,14 @@
 #include <assignment_2_2023/Goal.h>
 #include <assignment_2_2023/PlanningAction.h>
 #include <assignment_2_2023/customStatus.h>
+#include <atomic>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <geometry_msgs/PoseStamped.h>
 #include <iostream>
 #include <iterator>
 #include <limits.h>
+#include <mutex>
 #include <nav_msgs/Odometry.h>
 #include <ostream>
 #include <ros/ros.h>
@@ -20,11 +22,9 @@
 // Publisher for the odometry values
 ros::Publisher odomPublisher;
 // Variable that shows wether the robot currently has a target or not
-bool hasTarget = false;
-// Variable needed to correctly display messages on change of the state of the
-// robot
-int previousState = -1;
+std::atomic<bool> hasTarget(false);
 // Variable to store the current target
+std::mutex targetMutex;
 std::vector<int> target(2, INT_MIN);
 
 std::vector<int> parseForGoal(std::string input) {
@@ -67,7 +67,7 @@ std::vector<int> parseForGoal(std::string input) {
 
     // Converting the two parts now in string to int
     targetPosition[0] = std::stoi(parts[0]);
-    targetPosition[1] = std::stoi(parts[0]);
+    targetPosition[1] = std::stoi(parts[1]);
 
     return targetPosition;
 }
@@ -88,6 +88,9 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
     // In status_list the status for every goal is stored. Keep in mind that
     // here only one goal at a time is allowed
     long unsigned int arrSize = statusArr->status_list.size();
+    // Variable needed to correctly display messages on change of the state of
+    // the robot
+    static int previousState = -1;
     if (arrSize > 0) {
         // The status is retrieved from the status_list first element.
         int currentState = statusArr->status_list[0].status;
@@ -105,15 +108,12 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
             switch (currentState) {
             case 1:
                 ROS_INFO("Robot moving to target");
-                std::cout << "Next command:\n";
                 break;
             case 2:
                 ROS_INFO("Robot target has been canceled");
-                std::cout << "Next command:\n";
                 break;
             case 3:
                 ROS_INFO("Robot reached target");
-                std::cout << "Next command:\n";
                 break;
             default:
                 break;
@@ -121,6 +121,7 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
         }
     } else {
         // If the status_list has length 0 then there is no target currently
+        std::cout << "Next command:\n";
         hasTarget = false;
     }
 }
@@ -129,6 +130,7 @@ bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
                            assignment_2_2023::Goal::Response &res) {
     // If target still has the default value then it still needs to be
     // initialized
+    targetMutex.lock();
     if (target[0] == INT_MIN) {
         res.goal_x = 0;
         res.goal_y = 0;
@@ -148,6 +150,7 @@ bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
             res.status = "Reached";
         }
     }
+    targetMutex.unlock();
     return true;
 }
 
@@ -156,7 +159,7 @@ int main(int argc, char *argv[]) {
 
     // Initializing a pool of threads to serve all the message publishing,
     // subscribing and input
-    ros::AsyncSpinner spinner(3);
+    ros::AsyncSpinner spinner(5);
     ros::NodeHandle nh;
     ros::ServiceServer goal_publisher;
     // Declaring the subscribers
@@ -168,7 +171,6 @@ int main(int argc, char *argv[]) {
         "reaching_goal", true);
 
     // Initialize the AsyncSpinner threads
-    spinner.start();
     spinner.start();
 
     // Advertising service
@@ -204,6 +206,7 @@ int main(int argc, char *argv[]) {
         std::getline(std::cin, input);
         try {
             // Parsing the input
+            targetMutex.lock();
             target = parseForGoal(input);
 
             if (hasTarget) {
@@ -212,17 +215,19 @@ int main(int argc, char *argv[]) {
                 std::cout << "Please wait until target has been reached or\n"
                              "cancel the goal with \"cancel\"\n";
                 // Get new input
+                targetMutex.unlock();
                 continue;
             }
 
             // Here all the cases where a new target cannot be set are handled
         } catch (const char *str) {
             std::cout << "Received " << str << std::endl;
+            targetMutex.unlock();
 
-            if (std::string(str) == "quit")
+            if (std::string(str) == "quit") {
                 // If quit the node shall die
                 break;
-            else if (std::string(str) == "cancel") {
+            } else if (std::string(str) == "cancel") {
                 // If cancel the goal is canceled by calling the action client
                 // corresponding function
                 ac.cancelGoal();
@@ -232,9 +237,13 @@ int main(int argc, char *argv[]) {
             // In any other case a malformed input has been sent, so new input
             // needs to be read
             std::cout << "Malformed input please retry\n\n";
+            targetMutex.unlock();
             continue;
         }
 
+        // Note that this unlock is not called if any of the above unlocks is
+        // called otherwise this would cause undefined behaviour
+        targetMutex.unlock();
         // If nothing is catched then we have a correct target
         std::cout << "Input received successfully\n\n";
 
@@ -249,8 +258,10 @@ int main(int argc, char *argv[]) {
          *  string stat
          */
         geometry_msgs::PoseStamped goal_msg;
+        targetMutex.lock();
         goal_msg.pose.position.x = target[0];
         goal_msg.pose.position.y = target[1];
+        targetMutex.unlock();
         assignment_2_2023::PlanningGoal goal;
         goal.target_pose = goal_msg;
         ac.sendGoal(goal);
