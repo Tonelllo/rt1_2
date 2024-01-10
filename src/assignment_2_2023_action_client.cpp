@@ -11,13 +11,13 @@
 #include <iostream>
 #include <iterator>
 #include <limits.h>
+#include <mutex>
 #include <nav_msgs/Odometry.h>
 #include <ostream>
 #include <ros/ros.h>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <mutex>
 
 // Publisher for the odometry values
 ros::Publisher odomPublisher;
@@ -108,12 +108,15 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
             switch (currentState) {
             case 1:
                 ROS_INFO("Robot moving to target");
+                std::cout << "Next command:\n";
                 break;
             case 2:
                 ROS_INFO("Robot target has been canceled");
+                std::cout << "Next command:\n";
                 break;
             case 3:
                 ROS_INFO("Robot reached target");
+                std::cout << "Next command:\n";
                 break;
             default:
                 break;
@@ -121,7 +124,6 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
         }
     } else {
         // If the status_list has length 0 then there is no target currently
-        std::cout << "Next command:\n";
         hasTarget = false;
     }
 }
