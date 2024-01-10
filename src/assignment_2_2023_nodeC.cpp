@@ -1,7 +1,9 @@
 #include "ros/param.h"
+#include "ros/publisher.h"
 #include "ros/service.h"
 #include <assignment_2_2023/Goal.h>
 #include <assignment_2_2023/customStatus.h>
+#include <assignment_2_2023/posAndVel.h>
 #include <cmath>
 #include <list>
 #include <ros/ros.h>
@@ -15,6 +17,8 @@ int currentTop = 0;
 // List of 2d vector of velocities
 std::list<std::vector<float>> speeds;
 
+ros::Publisher speedPub;
+
 void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
     ros::NodeHandle nh;
     ros::ServiceClient client = nh.serviceClient<assignment_2_2023::Goal>(
@@ -25,7 +29,8 @@ void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
     client.call(goal);
 
     // Initializing the distance from the target
-    float distance = 0;
+    float distance = -1;
+    std::string status;
 
     if (goal.response.status == "Ok") {
         // If status of the response is Ok then a valid goal is returned, then
@@ -33,13 +38,14 @@ void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
         distance = std::sqrt(std::pow(msg->x - goal.response.goal_x, 2) +
                              std::pow(msg->y - goal.response.goal_y, 2));
 
-        ROS_INFO("Current distance from target: %f", distance);
+
+        status = "OK";
     } else if (goal.response.status == "Reached") {
         // If reached notify it
-        ROS_INFO("Reached goal, waiting for a new one");
+        status = "Reached goal, waiting for a new one";
     } else {
         // Otherwise no goal has been set
-        ROS_INFO("Awaiting goal to display distance");
+        status = "Awaiting goal to display distance";
     }
 
     // There is no need to check if currentTop is greater than windowSize
@@ -76,9 +82,12 @@ void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
     averageSpeed[0] /= currentTop;
     averageSpeed[1] /= currentTop;
 
-    // Displaying the result of the computation
-    ROS_INFO("Current average velocity (%f,%f)", averageSpeed[0],
-             averageSpeed[1]);
+    assignment_2_2023::posAndVel pubMsg;
+    pubMsg.distance = distance;
+    pubMsg.avg_speed_x = averageSpeed[0];
+    pubMsg.avg_speed_y = averageSpeed[1];
+    pubMsg.status = status;
+    speedPub.publish(pubMsg);
 }
 
 int main(int argc, char *argv[]) {
@@ -97,6 +106,8 @@ int main(int argc, char *argv[]) {
     ros::Subscriber sub =
         nh.subscribe("/assignment_2_2023/customStatus", 1, messageCallback);
 
+    speedPub = nh.advertise<assignment_2_2023::posAndVel>(
+        "assignment_2_2023/posAndVel", true);
     ros::spin();
     return 0;
 }
