@@ -112,12 +112,12 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
         // screen is made here otherwise there are gonna be a series of Next
         // command: without meaning
         switch (currentState) {
-            case 0:
+        case 0:
             ROS_INFO("Robot is now ready to receive a new target");
             std::cout << "Next command:\n";
             break;
         case 1:
-            ROS_INFO("Robot moving to target");
+            ROS_INFO("Robot moving to target,\nif you want to cancel input \"cancel\"");
             break;
         case 2:
             ROS_INFO("Robot target has been canceled");
@@ -162,15 +162,22 @@ int main(int argc, char *argv[]) {
     ac.waitForServer();
     ROS_INFO("Action server started");
 
+    // Printing the main message to the user with some examples of input
+    std::cout << "\n\n\n"
+                 "*****************************************************\n"
+                 "* The three commands that you can use are:          *\n"
+                 "* You can give a goal like this:\"(x,y)\",            *\n"
+                 "* Quit by sending:\"q\" or cancel the next goal       *\n"
+                 "* by writing \"cancel\" while the robot is            *\n"
+                 "* approaching the next target                       *\n"
+                 "*                                                   *\n"
+                 "* An example of input could be:                     *\n"
+                 "* Next command:                                     *\n"
+                 "* (10,20)                                           *\n"
+                 "* Now it's your turn!                               *\n"
+                 "*****************************************************\n";
+    std::cout << "Next command:\n";
     while (true) {
-        // Printing the main message to the user with some examples of input
-        std::cout << "Please insert command\n"
-                     "You can use \"(x,y)\", \"q\" or \"cancel\"\n"
-                     "An example of input could be:\n"
-                     "Next command:\n(10,20)\n"
-                     "Now it's your turn!\n"
-                     "Next command:\n";
-
         // String to store the user input before parsing
         std::string input;
 
@@ -193,7 +200,6 @@ int main(int argc, char *argv[]) {
 
             // Here all the cases where a new target cannot be set are handled
         } catch (const char *str) {
-            std::cout << "Received " << str << std::endl;
             targetMutex.unlock();
 
             if (std::string(str) == "quit") {
@@ -202,7 +208,12 @@ int main(int argc, char *argv[]) {
             } else if (std::string(str) == "cancel") {
                 // If cancel the goal is canceled by calling the action client
                 // corresponding function
-                ac.cancelGoal();
+                if (hasTarget)
+                    ac.cancelGoal();
+                else{
+                    std::cout << "Nothing to cancel\n";
+                    std::cout << "Next command:\n";
+                }
                 continue;
             }
         } catch (...) {
@@ -217,8 +228,6 @@ int main(int argc, char *argv[]) {
         // called otherwise this would cause undefined behaviour
         targetMutex.unlock();
         // If nothing is catched then we have a correct target
-        std::cout << "Input received successfully\n\n";
-
         // Setting all the parameters of the goal action message
         /*
          *  The format is shown below:
