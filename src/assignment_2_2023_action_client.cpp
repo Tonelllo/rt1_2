@@ -90,70 +90,45 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
     long unsigned int arrSize = statusArr->status_list.size();
     // Variable needed to correctly display messages on change of the state of
     // the robot
-    static int previousState = -1;
+    static int previousState = 0;
+    static int currentState = 0;
     if (arrSize > 0) {
         // The status is retrieved from the status_list first element.
-        int currentState = statusArr->status_list[0].status;
+        currentState = statusArr->status_list[0].status;
 
         // The robot is trying to reach a target so hasTarget must be true
         hasTarget = true;
 
-        // Only if the status changes send a message notifying that it has
-        // happened
-        if (previousState != currentState) {
-            previousState = currentState;
-            // Note that the assumption that this node will always print to
-            // screen is made here otherwise there are gonna be a series of Next
-            // command: without meaning
-            switch (currentState) {
-            case 1:
-                ROS_INFO("Robot moving to target");
-                std::cout << "Next command:\n";
-                break;
-            case 2:
-                ROS_INFO("Robot target has been canceled");
-                std::cout << "Next command:\n";
-                break;
-            case 3:
-                ROS_INFO("Robot reached target");
-                std::cout << "Next command:\n";
-                break;
-            default:
-                break;
-            }
-        }
     } else {
         // If the status_list has length 0 then there is no target currently
+        currentState = 0;
         hasTarget = false;
     }
-}
-
-bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
-                           assignment_2_2023::Goal::Response &res) {
-    // If target still has the default value then it still needs to be
-    // initialized
-    targetMutex.lock();
-    if (target[0] == INT_MIN) {
-        res.goal_x = 0;
-        res.goal_y = 0;
-        res.status = "Error: goal has to be set before requesting it. X and Y "
-                     "values are defaulted to 0";
-    } else {
-        if (hasTarget) {
-            // Otherwise if a target is set then send it.
-            res.goal_x = target[0];
-            res.goal_y = target[1];
-            res.status = "Ok";
-        } else {
-            // If there is no target set, but the target does not have the
-            // default value, then it means that the target has been reached
-            res.goal_x = 0;
-            res.goal_y = 0;
-            res.status = "Reached";
+    // Only if the status changes send a message notifying that it has
+    // happened
+    if (previousState != currentState) {
+        previousState = currentState;
+        // Note that the assumption that this node will always print to
+        // screen is made here otherwise there are gonna be a series of Next
+        // command: without meaning
+        switch (currentState) {
+            case 0:
+            ROS_INFO("Robot is now ready to receive a new target");
+            std::cout << "Next command:\n";
+            break;
+        case 1:
+            ROS_INFO("Robot moving to target");
+            break;
+        case 2:
+            ROS_INFO("Robot target has been canceled");
+            break;
+        case 3:
+            ROS_INFO("Robot reached target");
+            break;
+        default:
+            break;
         }
     }
-    targetMutex.unlock();
-    return true;
 }
 
 int main(int argc, char *argv[]) {
@@ -163,7 +138,6 @@ int main(int argc, char *argv[]) {
     // subscribing and input
     ros::AsyncSpinner spinner(5);
     ros::NodeHandle nh;
-    ros::ServiceServer goal_publisher;
     // Declaring the subscribers
     ros::Subscriber odomSubscriber;
     ros::Subscriber statusSubscriber;
@@ -174,10 +148,6 @@ int main(int argc, char *argv[]) {
 
     // Initialize the AsyncSpinner threads
     spinner.start();
-
-    // Advertising service
-    goal_publisher = nh.advertiseService("assignment_2_2023/last_goal",
-                                         targetServiceCallback);
 
     // Subscribing to services setting a queue size of 1
     odomSubscriber = nh.subscribe("/odom", 1, odomCallback);
