@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <assignment_2_2023/Goal.h>
 #include <assignment_2_2023/PlanningAction.h>
-#include <assignment_2_2023/customStatus.h>
+#include <assignment_2_2023/CustomStatus.h>
 #include <atomic>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -23,8 +23,9 @@
 ros::Publisher odomPublisher;
 // Variable that shows wether the robot currently has a target or not
 std::atomic<bool> hasTarget(false);
-// Variable to store the current target
+// Mutex to prevent mutual access to the 2D vector target
 std::mutex targetMutex;
+// 2D vector to store the current target
 std::vector<int> target(2, INT_MIN);
 
 std::vector<int> parseForGoal(std::string input) {
@@ -75,7 +76,7 @@ std::vector<int> parseForGoal(std::string input) {
 void odomCallback(const nav_msgs::Odometry::ConstPtr &pose) {
     // Retrieve and publish the current position and velocity of the robot.
     // The message is published using a custom message
-    assignment_2_2023::customStatus customMsg;
+    assignment_2_2023::CustomStatus customMsg;
     customMsg.x = pose->pose.pose.position.x;
     customMsg.y = pose->pose.pose.position.y;
     customMsg.vel_x = pose->twist.twist.linear.y;
@@ -154,7 +155,7 @@ int main(int argc, char *argv[]) {
     statusSubscriber = nh.subscribe("/reaching_goal/status", 1, goalCallback);
 
     // Advertising the topic on which to publish the custom velocity
-    odomPublisher = nh.advertise<assignment_2_2023::customStatus>(
+    odomPublisher = nh.advertise<assignment_2_2023::CustomStatus>(
         "assignment_2_2023/customStatus", true);
 
     // Wait for the action client before doing anything

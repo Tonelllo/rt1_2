@@ -6,8 +6,12 @@
 #include <mutex>
 #include <ros/ros.h>
 
+// Variable that shows wether the robot currently has a target or not
 std::atomic<bool> hasTarget(false);
+std::atomic<bool> canceled(false);
+// Mutex to prevent mutual access to the 2D vector target
 std::mutex targetMutex;
+// 2D vector to store the current target
 std::vector<int> target(2, INT_MIN);
 
 bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
@@ -31,7 +35,10 @@ bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
             // default value, then it means that the target has been reached
             res.goal_x = target[0];
             res.goal_y = target[1];
-            res.status = "Reached";
+            if(canceled)
+                res.status = "Canceled";
+            else
+                res.status = "Reached";
         }
     }
     targetMutex.unlock();
@@ -52,6 +59,10 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
 
         // The robot is trying to reach a target so hasTarget must be true
         hasTarget = true;
+        if(currentState == 2)
+            canceled = true;
+        else
+            canceled = false;
     } else {
         // If the status_list has length 0 then there is no target currently
         hasTarget = false;
@@ -59,14 +70,17 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
 }
 
 void goalIssued(
+    // If a new goal is added then save it in the target variable
     const assignment_2_2023::PlanningActionGoal::ConstPtr &lastGoal) {
-    ROS_INFO("RECEIVED NEW GOAL");
     auto position = lastGoal->goal.target_pose.pose.position;
+
+    // The mutex is locked in order to prevent mutual access
     targetMutex.lock();
     target[0] = position.x;
     target[1] = position.y;
     targetMutex.unlock();
 }
+
 int main(int argc, char *argv[]) {
     ros::init(argc, argv, "nodeB");
     ros::NodeHandle nh;
