@@ -1,6 +1,8 @@
+#include "ros/node_handle.h"
 #include "ros/param.h"
 #include "ros/publisher.h"
 #include "ros/service.h"
+#include "ros/service_client.h"
 #include <assignment_2_2023/Goal.h>
 #include <assignment_2_2023/PosAndVel.h>
 #include <assignment_2_2023/customStatus.h>
@@ -23,34 +25,34 @@ std::string status;
 std::mutex avgSpeedMutex;
 // The averageSpeed vector is initialized
 std::vector<float> averageSpeed(2, 0);
+ros::ServiceClient* goalClientPtr;
 
 void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
-    ros::NodeHandle nh;
-    ros::ServiceClient client = nh.serviceClient<assignment_2_2023::Goal>(
-        "assignment_2_2023/last_goal");
     assignment_2_2023::Goal goal;
 
     // Calling the service
-    client.call(goal);
+    goalClientPtr->call(goal);
+
+    static bool firstTargetIssued = false;
 
     // Initializing the distance from the target
-    distance = -1;
-
-    if (goal.response.status == "Ok") {
-        // If status of the response is Ok then a valid goal is returned, then
-        // the distance is calculated and displayed
+    if (firstTargetIssued)
         distance = std::sqrt(std::pow(msg->x - goal.response.goal_x, 2) +
                              std::pow(msg->y - goal.response.goal_y, 2));
-
+    if (goal.response.status == "Approaching") {
+        // If status of the response is Ok then a valid goal is returned, then
+        // the distance is calculated and displayed
         statusMutex.lock();
-        status = "OK";
+        status = "Approaching goal";
         statusMutex.unlock();
+        if (!firstTargetIssued)
+            firstTargetIssued = true;
     } else if (goal.response.status == "Reached") {
         // If reached notify it
         statusMutex.lock();
         status = "Reached goal, waiting for a new one";
         statusMutex.unlock();
-    }else if(goal.response.status == "Canceled"){
+    } else if (goal.response.status == "Canceled") {
         // If reached notify it
         statusMutex.lock();
         status = "Canceled goal, waiting for a new one";
@@ -59,7 +61,7 @@ void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
     } else {
         // Otherwise no goal has been set
         statusMutex.lock();
-        status = "Awaiting goal to display distance";
+        status = "Awaiting first goal to display distance";
         statusMutex.unlock();
     }
 
@@ -85,12 +87,12 @@ void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
     speeds.push_front(aux);
 
     // For every speed in the window add them
+    avgSpeedMutex.lock();
     for (std::vector<float> &speed : speeds) {
-        avgSpeedMutex.lock();
         averageSpeed[0] += speed[0];
         averageSpeed[1] += speed[1];
-        avgSpeedMutex.unlock();
     }
+    avgSpeedMutex.unlock();
 
     // Compute the average speed both in x and y direction
     avgSpeedMutex.lock();
@@ -128,6 +130,10 @@ int main(int argc, char *argv[]) {
     // Subscribing to the customStatus topic
     ros::Subscriber sub =
         nh.subscribe("/assignment_2_2023/customStatus", 1, messageCallback);
+
+    ros::ServiceClient client = nh.serviceClient<assignment_2_2023::Goal>(
+        "assignment_2_2023/last_goal");
+    goalClientPtr = &client;
 
     speedServ =
         nh.advertiseService("assignment_2_2023/posAndVel", posAndVelCallback);

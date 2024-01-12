@@ -139,7 +139,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(${PROJECT_NAME}_action_client src/assignment_2_2023_action_client.cpp)
+add_executable(${PROJECT_NAME}_nodeA src/assignment_2_2023_nodeA.cpp)
 add_executable(${PROJECT_NAME}_nodeB src/assignment_2_2023_nodeB.cpp)
 add_executable(${PROJECT_NAME}_nodeC src/assignment_2_2023_nodeC.cpp)
 
@@ -152,7 +152,7 @@ add_executable(${PROJECT_NAME}_nodeC src/assignment_2_2023_nodeC.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 add_dependencies(
-    ${PROJECT_NAME}_action_client 
+    ${PROJECT_NAME}_nodeA
     ${${PROJECT_NAME}_EXPORTED_TARGETS} 
     ${catkin_EXPORTED_TARGETS}
 )
@@ -168,7 +168,7 @@ add_dependencies(
 )
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(${PROJECT_NAME}_action_client
+target_link_libraries(${PROJECT_NAME}_nodeA
   ${catkin_LIBRARIES}
 )
 target_link_libraries(${PROJECT_NAME}_nodeB

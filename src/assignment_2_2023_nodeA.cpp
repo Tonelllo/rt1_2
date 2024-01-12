@@ -133,7 +133,7 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
 }
 
 int main(int argc, char *argv[]) {
-    ros::init(argc, argv, "action_client");
+    ros::init(argc, argv, "nodeA");
 
     // Initializing a pool of threads to serve all the message publishing,
     // subscribing and input
@@ -220,7 +220,7 @@ int main(int argc, char *argv[]) {
         } catch (...) {
             // In any other case a malformed input has been sent, so new input
             // needs to be read
-            std::cout << "Malformed input please retry\n\n";
+            std::cout << "Malformed input please retry\nNext command:\n";
             targetMutex.unlock();
             continue;
         }
