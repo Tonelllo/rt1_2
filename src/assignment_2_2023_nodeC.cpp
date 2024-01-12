@@ -11,21 +11,31 @@
 #include <ros/ros.h>
 #include <vector>
 
-// The default value for the moving average window
+// The default value for the moving average window. Note that this value is only
+// a placeholder since is then retrieved form the parameter server in main
 int windowSize = 10;
-// Current dimension for the averaging window. Note, this is used only in the
-// initialization of the moving average window
+// Current top for the window average array. This is used only in the
+// initialization phase
 int currentTop = 0;
 // List of 2d vector of velocities
 std::list<std::vector<float>> speeds;
 
+// Distance declared atomic in order to prevent concurrent access
 std::atomic<float> distance(-1);
+
+// Mutex for accessing status string where the status of the target is saved
 std::mutex statusMutex;
 std::string status;
+
+// Mutex for accessing average speed
 std::mutex avgSpeedMutex;
 // The averageSpeed vector is initialized
 std::vector<float> averageSpeed(2, 0);
-ros::ServiceClient* goalClientPtr;
+
+// Point for accessing last_goal topic tanks to the handler in main. This is
+// necessary because declaring an handler in a callback is particulary
+// inefficient and discouraged by ros documentation
+ros::ServiceClient *goalClientPtr;
 
 void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
     assignment_2_2023::Goal goal;
@@ -33,18 +43,19 @@ void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
     // Calling the service
     goalClientPtr->call(goal);
 
+    // Boolean to avoid displaying a distance since the firste target is sent.
     static bool firstTargetIssued = false;
 
-    // Initializing the distance from the target
+    // Calculating the distance from the target if at least once it has been set
     if (firstTargetIssued)
         distance = std::sqrt(std::pow(msg->x - goal.response.goal_x, 2) +
                              std::pow(msg->y - goal.response.goal_y, 2));
+    // Here messages are proxied to the consol and some information is added
     if (goal.response.status == "Approaching") {
-        // If status of the response is Ok then a valid goal is returned, then
-        // the distance is calculated and displayed
         statusMutex.lock();
         status = "Approaching goal";
         statusMutex.unlock();
+        // At least one valid goal has been set so now distance can be calculated
         if (!firstTargetIssued)
             firstTargetIssued = true;
     } else if (goal.response.status == "Reached") {
@@ -103,6 +114,7 @@ void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
 
 bool posAndVelCallback(assignment_2_2023::PosAndVel::Request &req,
                        assignment_2_2023::PosAndVel::Response &res) {
+    // Give to the user the last target information and take the necessary mutexes
     statusMutex.lock();
     res.status = status;
     statusMutex.unlock();
@@ -131,12 +143,15 @@ int main(int argc, char *argv[]) {
     ros::Subscriber sub =
         nh.subscribe("/assignment_2_2023/customStatus", 1, messageCallback);
 
+    // Subscribe to last_goal
     ros::ServiceClient client = nh.serviceClient<assignment_2_2023::Goal>(
         "assignment_2_2023/last_goal");
     goalClientPtr = &client;
 
+    // Advertising posAndVel service
     speedServ =
         nh.advertiseService("assignment_2_2023/posAndVel", posAndVelCallback);
+
     ros::spin();
     return 0;
 }

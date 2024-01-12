@@ -1,9 +1,9 @@
 #include "ros/service.h"
 #include <actionlib/client/simple_action_client.h>
 #include <algorithm>
+#include <assignment_2_2023/CustomStatus.h>
 #include <assignment_2_2023/Goal.h>
 #include <assignment_2_2023/PlanningAction.h>
-#include <assignment_2_2023/CustomStatus.h>
 #include <atomic>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -21,7 +21,7 @@
 
 // Publisher for the odometry values
 ros::Publisher odomPublisher;
-// Variable that shows wether the robot currently has a target or not
+// Variable that shows whether the robot currently has a target or not
 std::atomic<bool> hasTarget(false);
 // Mutex to prevent mutual access to the 2D vector target
 std::mutex targetMutex;
@@ -58,7 +58,7 @@ std::vector<int> parseForGoal(std::string input) {
     // split
     std::vector<std::string> parts(2);
 
-    // Splitting the string on ,
+    // Splitting the string on ','
     boost::split(parts, input, boost::algorithm::is_any_of(","));
 
     // If after splitting there are not two parts then the input was malformed
@@ -97,13 +97,16 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
         // The status is retrieved from the status_list first element.
         currentState = statusArr->status_list[0].status;
 
-        // The robot is trying to reach a target so hasTarget must be true
+        // The robot is trying to reach a target because the list has one
+        // element so hasTarget must be true
         hasTarget = true;
 
     } else {
         // If the status_list has length 0 then there is no target currently
-        currentState = 0;
         hasTarget = false;
+        // The current state is set to 0 meaning that the robot is now ready to
+        // receive a new command
+        currentState = 0;
     }
     // Only if the status changes send a message notifying that it has
     // happened
@@ -111,14 +114,15 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
         previousState = currentState;
         // Note that the assumption that this node will always print to
         // screen is made here otherwise there are gonna be a series of Next
-        // command: without meaning
+        // command: not displayed on screen
         switch (currentState) {
         case 0:
             ROS_INFO("Robot is now ready to receive a new target");
             std::cout << "Next command:\n";
             break;
         case 1:
-            ROS_INFO("Robot moving to target,\nif you want to cancel input \"cancel\"");
+            ROS_INFO("Robot moving to target,\nif you want to cancel input "
+                     "\"cancel\"");
             break;
         case 2:
             ROS_INFO("Robot target has been canceled");
@@ -194,13 +198,14 @@ int main(int argc, char *argv[]) {
                 // for the target or cancel it
                 std::cout << "Please wait until target has been reached or\n"
                              "cancel the goal with \"cancel\"\n";
-                // Get new input
                 targetMutex.unlock();
                 continue;
             }
 
             // Here all the cases where a new target cannot be set are handled
         } catch (const char *str) {
+            // If a string is catched the unlocking has not been done on target,
+            // so here we need to unlock the mutex
             targetMutex.unlock();
 
             if (std::string(str) == "quit") {
@@ -211,7 +216,7 @@ int main(int argc, char *argv[]) {
                 // corresponding function
                 if (hasTarget)
                     ac.cancelGoal();
-                else{
+                else {
                     std::cout << "Nothing to cancel\n";
                     std::cout << "Next command:\n";
                 }
@@ -221,6 +226,7 @@ int main(int argc, char *argv[]) {
             // In any other case a malformed input has been sent, so new input
             // needs to be read
             std::cout << "Malformed input please retry\nNext command:\n";
+            // And the mutex must be unlocked
             targetMutex.unlock();
             continue;
         }
@@ -248,7 +254,8 @@ int main(int argc, char *argv[]) {
         goal.target_pose = goal_msg;
         ac.sendGoal(goal);
     }
-
+    
+    // The final message of the node
     std::cout << "Exiting..." << std::endl;
 
     return 0;

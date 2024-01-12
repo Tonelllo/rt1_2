@@ -6,8 +6,9 @@
 #include <mutex>
 #include <ros/ros.h>
 
-// Variable that shows wether the robot currently has a target or not
+// Variable that shows whether the robot currently has a target or not
 std::atomic<bool> hasTarget(false);
+// Variable that shows whether the laste target was canceled or not
 std::atomic<bool> canceled(false);
 // Mutex to prevent mutual access to the 2D vector target
 std::mutex targetMutex;
@@ -17,7 +18,7 @@ std::vector<int> target(2, INT_MIN);
 bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
                            assignment_2_2023::Goal::Response &res) {
     // If target still has the default value then it still needs to be
-    // initialized
+    // initialized. A lock is taken in order to operate on the target
     targetMutex.lock();
     if (target[0] == INT_MIN) {
         res.goal_x = 0;
@@ -32,15 +33,17 @@ bool targetServiceCallback(assignment_2_2023::Goal::Request &req,
             res.status = "Approaching";
         } else {
             // If there is no target set, but the target does not have the
-            // default value, then it means that the target has been reached
+            // default value, then it means that the target has been reached or
+            // canceled depending on the value of "canceled"
             res.goal_x = target[0];
             res.goal_y = target[1];
-            if(canceled)
+            if (canceled)
                 res.status = "Canceled";
             else
                 res.status = "Reached";
         }
     }
+    // Finished operating on target so the unlock is called
     targetMutex.unlock();
     return true;
 }
@@ -59,7 +62,8 @@ void goalCallback(const actionlib_msgs::GoalStatusArray::ConstPtr &statusArr) {
 
         // The robot is trying to reach a target so hasTarget must be true
         hasTarget = true;
-        if(currentState == 2)
+        // Here canceled is set depending on the satatus of the last target set
+        if (currentState == 2)
             canceled = true;
         else
             canceled = false;
@@ -83,15 +87,18 @@ void goalIssued(
 
 int main(int argc, char *argv[]) {
     ros::init(argc, argv, "nodeB");
+
     ros::NodeHandle nh;
+
+    // Declaring services and subscribers handles
     ros::ServiceServer goalPublisher;
     ros::Subscriber statusSubscriber;
     ros::Subscriber goalSubscriber;
 
-    // Advertising service
+    // Subscribing to the necessary topics
     statusSubscriber = nh.subscribe("reaching_goal/status", 1, goalCallback);
-    goalSubscriber =
-        nh.subscribe("reaching_goal/goal", 1, goalIssued);
+    goalSubscriber = nh.subscribe("reaching_goal/goal", 1, goalIssued);
+    // Advertising service
     goalPublisher = nh.advertiseService("assignment_2_2023/last_goal",
                                         targetServiceCallback);
     ros::spin();
