@@ -5,7 +5,7 @@
 #include "ros/service_client.h"
 #include <assignment_2_2023/Goal.h>
 #include <assignment_2_2023/PosAndVel.h>
-#include <assignment_2_2023/customStatus.h>
+#include <assignment_2_2023/CustomStatus.h>
 #include <cmath>
 #include <list>
 #include <ros/ros.h>
@@ -37,7 +37,7 @@ std::vector<float> averageSpeed(2, 0);
 // inefficient and discouraged by ros documentation
 ros::ServiceClient *goalClientPtr;
 
-void messageCallback(const assignment_2_2023::customStatus::ConstPtr &msg) {
+void messageCallback(const assignment_2_2023::CustomStatus::ConstPtr &msg) {
     assignment_2_2023::Goal goal;
 
     // Calling the service
