@@ -69,6 +69,10 @@ Now the only thing left to do is run everything with:
 roslaunch assignment_2_2023 assignment1.launch
 ```
 
+**NOTE** that the first time that everything is run, gazebo takes a lot of time
+to start. It has been noted that sometimes sending new targets on the first
+launch does not work. Just restart everything, and it should be good to go.
+
 ## What does this code do?
 This code has been developed to familiarize with some ROS concepts for the second research track assignment:
 - Launch files
@@ -95,16 +99,30 @@ odomCallback(){
 }
 
 goalCallback(){
-  if (goal_is_set){
+  if (user_has_set_a_target){
     currentState = getState();
     goal_is_set = true;
   }else{
     currentState = no_target;
     goal_is_set = false;
   }
-  if (has_changed(status)){
-    print_new_status(status);
+  if (hasCanged(status)){
+    printNewStatus(status);
   }
+}
+
+getInput(input){
+    if(input == "q")
+        throw quit;
+    if(input == "Cancel")
+        throw cancel;
+
+    removeParenthesis(input);
+    (goal_x,goal_y) = splitOnComma(input);
+    // If one of the previous two functions cannot perform
+    // what it needs to do then throws malformed_input
+
+    return (goal_x,goal_y);
 }
 
 main(){
@@ -113,7 +131,7 @@ main(){
 
   while(true){
     try {
-      (goal_x,goal_y) = getInput();
+      (goal_x,goal_y) = getInput(input);
       if(goal_is_set){
         print("Please wait untill target has been reached or cancel the goal with "cancel"");
         continue;
@@ -126,7 +144,9 @@ main(){
       print("The format of the input is not correct pleasy retry");
     }
   }
-  // If we reach this point everything is good
+
+  // If we reach this point everything is good and the new goal
+  // can be sent to the action server
   publishNewGoal();
 }
 
