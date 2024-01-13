@@ -137,6 +137,7 @@ can be:
 * Approaching
 * Canceled
 * Reached
+
 This node subscribes to "reaching_goal/status" and to "reaching_goal/goal" in
 order to perform the calculations needed to display the distance and the average
 speed on x and y-axis. The subscription on "reaching_goal/goal" allow the node
