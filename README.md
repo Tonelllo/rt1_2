@@ -16,6 +16,7 @@ Before running these instructions some basic utilities will be needed:
 * Docker
 * Git
 * A VNC client, for example tigervnc
+
 After having downloaded these pieces of software then you will be able to
 follow the following guide:
 
@@ -138,6 +139,7 @@ can be:
 * Approaching
 * Canceled
 * Reached
+
 This node subscribes to `reaching_goal/status` and to `reaching_goal/goal` in
 order to perform the calculations needed to display the distance and the average
 speed on x and y-axis. The subscription on `reaching_goal/goal` allow the node
