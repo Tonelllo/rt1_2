@@ -2,7 +2,7 @@
 - [Research Track Assignment 2](#research-track-assignment-2)
   * [How to run the code](#how-to-run-the-code)
   * [What does this code do?](#what-does-this-code-do)
-    + [assignment_action_client](#assignment_2_2023_nodea)
+    + [assignment_2_2023_nodeA](#assignment_2_2023_nodea)
     + [assignment_2_2023_nodeB](#assignment_2_2023_nodeb)
     + [assignment_2_2023_nodeC](#assignment_2_2023_nodec)
 
