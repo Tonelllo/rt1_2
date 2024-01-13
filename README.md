@@ -5,6 +5,7 @@
     + [assignment_2_2023_nodeA](#assignment_2_2023_nodea)
     + [assignment_2_2023_nodeB](#assignment_2_2023_nodeb)
     + [assignment_2_2023_nodeC](#assignment_2_2023_nodec)
+  * [Further improvements](#further-improvements)
 
 <small><i><a href='http://ecotrust-canada.github.io/markdown-toc/'>Table of contents generated with markdown-toc</a></i></small>
 
@@ -164,7 +165,7 @@ most recent calculation of these values. The service is advertised on the topic
 "assignment_2_2023/posAndVel". Also in this case an additional status string is
 provided to better understand the status of the robot.
 
-## Possible improvements
+## Further improvements
 The update of the topic "assignment_2_2023/last_goal" is particularly slow when
 it has to display the status "Reached" or "Canceled" because these two states
 depend of a check on the size of the list of goals. If this list has size 0 then
