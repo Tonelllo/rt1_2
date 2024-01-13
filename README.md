@@ -37,11 +37,11 @@ To have the changes to take effect source the .bashrc file:
 ```
 source ~/.bashrc
 ```
-After having connected to the vnc server it's advised to create a clean directory path to work on so:
+After having connected to the VNC server it's advised to create a clean directory path to work on so:
 ```
 mkdir -p /root/my_ros/src
 ```
-**The next step is very important otherwise the lauch file will not work, in particular the folder has to be named assignment_2_2023**
+**The next step is very important otherwise the launch file will not work, in particular the folder has to be named assignment_2_2023**
 After that clone this repo in the newly created folder:
 ```
 cd /root/my_ros/src
@@ -58,7 +58,7 @@ cd devel
 echo $(echo "source ") $(readlink -f setup.bash) >> ~/.bashrc
 source ~/.bashrc
 ```
-Update ros packages with:
+Update ROS packages with:
 ```
 rospack profile
 ```
@@ -68,7 +68,7 @@ roslaunch assignment_2_2023 assignment1.launch
 ```
 
 ## What does this code do?
-This code has been developed to familiarize with some ros concepts for the second research track assignment:
+This code has been developed to familiarize with some ROS concepts for the second research track assignment:
 - Launch files
 - Custom messages
 - Custom services
@@ -77,13 +77,13 @@ This code has been developed to familiarize with some ros concepts for the secon
 - Action clients and servers
 - Custom action messages
 
-In addition to those topics this project has been developed to familiarize with the development of ros nodes using c++.
+In addition to those topics this project has been developed to familiarize with the development of ROS nodes using c++.
 **NOTE** that both on this documentation and in the code the terms "goal" and
 "target" mean the same concept, so the point that the robot needs to reach.
-The project is divided in three different nodes
+The project is divided in three different nodes.
 ### assignment_2_2023_nodeA
 This node is the action client. This node keeps asking the user for a new target to reach. The input is parsed and if the syntax is not correct then a "Malformed input" error will be displayed, and a new goal will be requested.
-If the user sets the target then the robot starts to go towards it. The user has also the possibility to cancel the reach of the target by writing 'cancel' or close the node by pressing 'q'. The sending and the cancellation of the target is done by using the action client functionalities. This node also works as a proxy for the "/odom" topic in fact it extracts from it the position and the velocity of the robot and sends it with a custom message on "assignment_2_2023/customStatus". In addition to that this node also provides change reports on the status of the robot by subscribing to "/reaching_goal/status". This node will signal when a new goal has been set, when a goal has been canceled and when the goal has been reached. As an implementation choice this node allows setting only one goal at a time, so if the user tries to set another target when one is already set an error message will be presented telling the user to first remove the already set goal before issuing another one. 
+If the user sets the target then the robot starts to go towards it. The user has also the possibility to cancel the reach of the target by writing 'cancel' or close the node by pressing 'q'. The sending and the cancellation of the target is done by using the action client functionalities. This node also works as a proxy for the `/odom` topic in fact it extracts from it the position and the velocity of the robot and sends it with a custom message on `assignment_2_2023/customStatus`. In addition to that this node also provides change reports on the status of the robot by subscribing to `/reaching_goal/status`. This node will signal when a new goal has been set, when a goal has been canceled and when the goal has been reached. As an implementation choice this node allows setting only one goal at a time, so if the user tries to set another target when one is already set an error message will be presented telling the user to first remove the already set goal before issuing another one. 
 The pseudocode of this node is:
 ```c
 
@@ -137,15 +137,15 @@ can be:
 * Approaching
 * Canceled
 * Reached
-This node subscribes to "reaching_goal/status" and to "reaching_goal/goal" in
+This node subscribes to `reaching_goal/status` and to `reaching_goal/goal` in
 order to perform the calculations needed to display the distance and the average
-speed on x and y-axis. The subscription on "reaching_goal/goal" allow the node
+speed on x and y-axis. The subscription on `reaching_goal/goal` allow the node
 to retrieve the last goal position and save it. The status of the reaching of
-the node is retrieved by subscribing to "reaching_goal/status". These two nodes
+the node is retrieved by subscribing to `reaching_goal/status`. These two nodes
 update global variables and their mutual exclusion is guaranteed by either
 std::atomic or mutexes. The updated values are then retrieved by the routine
 that handles the service call response and sent on the topic
-"assignment_2_2023/last_goal".
+`assignment_2_2023/last_goal`.
 
 ### assignment_2_2023_nodeC
 The role of this node is to provide a service with which the user is able to
@@ -155,16 +155,16 @@ average technique and the dimension of this window is read from a parameter
 retrieved by the ROS parameter server from the launch file corresponding to this
 node. Note that this parameter is only read at launch.
 In order to provide this service the node subscribes to the topic
-"assignment_2_2023/customStatus" in order to retrieve the x and y position and
-speed, and "assignment_2_2023/last_goal" in order to retrieve the position of
+`assignment_2_2023/customStatus` in order to retrieve the x and y position and
+speed, and `assignment_2_2023/last_goal` in order to retrieve the position of
 the last goal set by the user. The calculation of the average speed and distance
 are computed continuously and when the service is called then it returns the
 most recent calculation of these values. The service is advertised on the topic
-"assignment_2_2023/posAndVel". Also in this case an additional status string is
+`assignment_2_2023/posAndVel`. Also in this case an additional status string is
 provided to better understand the status of the robot.
 
 ## Possible improvements
-The update of the topic "assignment_2_2023/last_goal" is particularly slow when
+The update of the topic `assignment_2_2023/last_goal` is particularly slow when
 it has to display the status "Reached" or "Canceled" because these two states
 depend of a check on the size of the list of goals. If this list has size 0 then
 it means that the last goal that needed to be reached or is reached or canceled.
